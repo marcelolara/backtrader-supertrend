@@ -8,6 +8,9 @@ import backtrader as bt
 
 # Create a Strategy
 class TestStrategy(bt.Strategy):
+    params = (
+        ('exitbars', 5),
+    )
 
     def log(self, txt, dt=None):
         """ Logging function for this strategy """
@@ -41,11 +44,10 @@ class TestStrategy(bt.Strategy):
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
             else:  # Sell
-                self.log(
-                    'SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm: %.2f' %
-                    (order.executed.price,
-                     order.executed.value,
-                     order.executed.comm))
+                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm: %.2f' %
+                         (order.executed.price,
+                          order.executed.value,
+                          order.executed.comm))
 
             self.bar_executed = len(self)
 
@@ -89,7 +91,7 @@ class TestStrategy(bt.Strategy):
         else:
 
             # Already in the market ... we might sell
-            if len(self) >= (self.bar_executed + 5):
+            if len(self) >= (self.bar_executed + self.params.exitbars):
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
@@ -123,6 +125,9 @@ cerebro.adddata(data)
 
 # Set oru desired cash start
 cerebro.broker.setcash(100000.0)
+
+# Add a FixedSize sizer according to the stake
+cerebro.addsizer(bt.sizers.FixedSize, stake=10)
 
 # Set the commission - 0.1% ... divide by 100 to remove the %
 cerebro.broker.setcommission(commission=0.001)
