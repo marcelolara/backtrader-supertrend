@@ -9,7 +9,7 @@ import backtrader as bt
 # Create a Strategy
 class TestStrategy(bt.Strategy):
     params = (
-        ('exitbars', 5),
+        ('maperiod', 15),
     )
 
     def log(self, txt, dt=None):
@@ -25,6 +25,10 @@ class TestStrategy(bt.Strategy):
         self.order = None
         self.buyprice = None
         self.buycomm = None
+
+        # Add a MovingAverageSimple indicator
+        self.sma = bt.indicators.SMA(
+            self.datas[0], period=self.params.maperiod)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -76,22 +80,17 @@ class TestStrategy(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.dataclose[0] < self.dataclose[-1]:
-                # current close less than the previous close
+            if self.dataclose[0] > self.sma[0]:
 
-                if self.dataclose[-1] < self.dataclose[-2]:
-                    # previous close less than the previous close
+                # BUY, BUY, BUY!!! (with all possible default parameters)
+                self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
-                    # BUY, BUY, BUY!!! (with all possible default parameters)
-                    self.log('BUY CREATE, %.2f' % self.dataclose[0])
-
-                    # Keep track of the created order to avoid an 2nd order
-                    self.order = self.buy()
+                # Keep track of the created order to avoid an 2nd order
+                self.order = self.buy()
 
         else:
 
-            # Already in the market ... we might sell
-            if len(self) >= (self.bar_executed + self.params.exitbars):
+            if self.dataclose[0] < self.sma[0]:
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
@@ -124,13 +123,13 @@ data = bt.feeds.YahooFinanceData(
 cerebro.adddata(data)
 
 # Set oru desired cash start
-cerebro.broker.setcash(100000.0)
+cerebro.broker.setcash(1000.0)
 
 # Add a FixedSize sizer according to the stake
 cerebro.addsizer(bt.sizers.FixedSize, stake=10)
 
 # Set the commission - 0.1% ... divide by 100 to remove the %
-cerebro.broker.setcommission(commission=0.001)
+cerebro.broker.setcommission(commission=0.0)
 
 # Print out the starting conditions
 print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
