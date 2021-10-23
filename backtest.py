@@ -30,6 +30,15 @@ class TestStrategy(bt.Strategy):
         self.sma = bt.indicators.SMA(
             self.datas[0], period=self.params.maperiod)
 
+        # Indicators for the plotting show
+        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
+        bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)
+        bt.indicators.StochasticSlow(self.datas[0])
+        bt.indicators.MACDHisto(self.datas[0])
+        rsi = bt.indicators.RSI(self.datas[0])
+        bt.indicators.SmoothedMovingAverage(rsi, period=10)
+        bt.indicators.ATR(self.datas[0], plot=False)
+
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
@@ -81,7 +90,6 @@ class TestStrategy(bt.Strategy):
 
             # Not yet ... we MIGHT BUY if ...
             if self.dataclose[0] > self.sma[0]:
-
                 # BUY, BUY, BUY!!! (with all possible default parameters)
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
@@ -139,3 +147,6 @@ cerebro.run()
 
 # Print the final result
 print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+
+# Plot the result
+cerebro.plot()
